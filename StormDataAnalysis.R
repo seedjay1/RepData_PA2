@@ -55,7 +55,7 @@ if (!file.exists(paste(filename, extension.data, sep='')))
 readdata <- TRUE
 if (exists("data.raw"))
 {
-  if(nrow(data.raw) == 902298)
+  if(nrow(data.raw) == 902297) # hardcoding numbers is bad m'kay?
   {
     readdata <- FALSE
   }
