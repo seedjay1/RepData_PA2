@@ -14,11 +14,11 @@ if (!file.exists(paste(filename, extension.data, sep='')))
 {
   message("Data file not found, checking for data zip file
           ")
-  if (!file.exists(paste(filename, extension.zip, sep='')))
+  if (!file.exists(paste(c(filename, extension.data, extension.zip), collapse='')))
   {
     message("Data zip file not found. Downloading.")
     
-    download <- download.file(zipurl, destfile = "temp.zip")
+    download <- download.file(zipurl, destfile=paste(c(filename, extension.data, extension.zip), collapse=''))
     foundzip <- TRUE
     
     message("Data zip file downloaded.")
@@ -31,13 +31,18 @@ if (!file.exists(paste(filename, extension.data, sep='')))
   {
     message("Found data zip file, unzipping.")
     
-    unzip("temp.zip")
-    unlink("temp.zip")
+    library(R.utils)
+    bunzip2(paste(c(filename, extension.data, extension.zip), collapse='')
+            , paste(c(filename, extension.data), collapse='')
+            , remove = FALSE
+            , overwrite = TRUE
+            )
+    unlink(paste(filename, extension.zip, sep=''))
     
     message("Data zip file unzipped.")
   }
   
-  if (!file.exists(paste(filename, extension.data, sep=''))) 
+  if (file.exists(paste(filename, extension.data, sep=''))) 
   {
     message("Data file exists, ready for preprocessing")
   } else
@@ -46,7 +51,16 @@ if (!file.exists(paste(filename, extension.data, sep='')))
   }
 }
 
-if(nrow(data.raw) != 902298)
+# read data only if not already loaded
+readdata <- TRUE
+if (exists("data.raw"))
+{
+  if(nrow(data.raw) == 902298)
+  {
+    readdata <- FALSE
+  }
+}
+if (readdata)
 {
   message("Reading data file:")
   data.raw <- read.csv(paste(filename, extension.data, sep=''), header=FALSE)
