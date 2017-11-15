@@ -63,7 +63,7 @@ if (exists("data.raw"))
 if (readdata)
 {
   message("Reading data file:")
-  data.raw <- read.csv(paste(filename, extension.data, sep=''), header=FALSE)
+  data.raw <- read.csv(paste(filename, extension.data, sep=''), header=TRUE)
 }
 
 str(data.raw)
