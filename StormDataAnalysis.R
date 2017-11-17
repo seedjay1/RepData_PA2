@@ -55,7 +55,7 @@ if (!file.exists(paste(filename, extension.data, sep='')))
 readdata <- TRUE
 if (exists("data.raw"))
 {
-  if(nrow(data.raw) == 902297) # hardcoding numbers is bad m'kay?
+  if(nrow(data.raw) == 902297) # hardcoding numbers is bad m'kay? saves time though.
   {
     readdata <- FALSE
   }
@@ -68,11 +68,18 @@ if (readdata)
 
 str(data.raw)
 
+# Data processing
+
+# project out the columns we're interested in
 data.proc <- data.raw[,c("EVTYPE", "FATALITIES", "INJURIES", "PROPDMG","PROPDMGEXP","CROPDMG","CROPDMGEXP")]
 
-denominations <- list(list(c('h', 'H'), 2)
-                      , list(c('t', 'T'), 3)
-                      , list(c('m', 'M'), 6)
-                      , list(c('b', 'B'), 9)
-                  )
+# perform order of magnitude calculation to get actual dollar amounts for prop & crop damage
+data.proc$prop_dmg <- data.proc$PROPDMG * sapply(data.proc$PROPDMGEXP, function(str_exp) {switch(tolower(str_exp), "h" = 100, "k" = 1000, "m" = 1000000, "b" = 1000000000, 0)})
+data.proc$crop_dmg <- data.proc$CROPDMG * sapply(data.proc$CROPDMGEXP, function(str_exp) {switch(tolower(str_exp), "h" = 100, "k" = 1000, "m" = 1000000, "b" = 1000000000, 0)})
 
+# create totals by event for prop & crop damage value
+econ_dmg <- ddply(data.proc, .(EVTYPE), summarize, prop_dmg = sum(prop_dmg), crop_dmg = sum(crop_dmg))
+econ_dmg <- econ_dmg[(econ_dmg$prop_dmg > 0 | econ_dmg$crop_dmg > 0), ]
+
+# create totals by event for health damage
+health_dmg <- ddply(data.proc, .(EVTYPE), summarize, fat = sum(FATALITIES), inj = sum(INJURIES))

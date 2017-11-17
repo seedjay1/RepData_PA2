@@ -167,6 +167,10 @@ $(document).ready(function () {
 # Data loader
 # =======================
 
+# packages we'll be using
+library(plyr)
+library(ggplot2)
+
 # download data if it isn't already in place in current directory
 filename &lt;- &quot;repdata_data_StormData&quot;
 extension.data &lt;- &quot;.csv&quot;
@@ -277,13 +281,21 @@ if (readdata)
 <li>Convert dollar value orders of magnitude into actual dollar amounts</li>
 <li>Anything else</li>
 </ul>
-<pre class="r"><code>data.proc &lt;- data.raw[,c(&quot;EVTYPE&quot;, &quot;FATALITIES&quot;, &quot;INJURIES&quot;, &quot;PROPDMG&quot;,&quot;PROPDMGEXP&quot;,&quot;CROPDMG&quot;,&quot;CROPDMGEXP&quot;)]
+<pre class="r"><code># Data processing
 
-denominations &lt;- list(list(c('h', 'H'), 2)
-                      , list(c('t', 'T'), 3)
-                      , list(c('m', 'M'), 6)
-                      , list(c('b', 'B'), 9)
-                  )</code></pre>
+# project out the columns we're interested in
+data.proc &lt;- data.raw[,c(&quot;EVTYPE&quot;, &quot;FATALITIES&quot;, &quot;INJURIES&quot;, &quot;PROPDMG&quot;,&quot;PROPDMGEXP&quot;,&quot;CROPDMG&quot;,&quot;CROPDMGEXP&quot;)]
+
+# perform order of magnitude calculation to get actual dollar amounts for prop &amp; crop damage
+data.proc$prop_dmg &lt;- data.proc$PROPDMG * sapply(data.proc$PROPDMGEXP, function(str_exp) {switch(tolower(str_exp), &quot;h&quot; = 100, &quot;k&quot; = 1000, &quot;m&quot; = 1000000, &quot;b&quot; = 1000000000, 0)})
+data.proc$crop_dmg &lt;- data.proc$CROPDMG * sapply(data.proc$CROPDMGEXP, function(str_exp) {switch(tolower(str_exp), &quot;h&quot; = 100, &quot;k&quot; = 1000, &quot;m&quot; = 1000000, &quot;b&quot; = 1000000000, 0)})
+
+# create totals by event for prop &amp; crop damage value
+econ_dmg &lt;- ddply(data.proc, .(EVTYPE), summarize, prop_dmg = sum(prop_dmg), crop_dmg = sum(crop_dmg))
+econ_dmg &lt;- econ_dmg[(econ_dmg$prop_dmg &gt; 0 | econ_dmg$crop_dmg &gt; 0), ]
+
+# create totals by event for health damage
+health_dmg &lt;- ddply(data.proc, .(EVTYPE), summarize, fat = sum(FATALITIES), inj = sum(INJURIES))</code></pre>
 </div>
 </div>
 <div id="results-health" class="section level3">
