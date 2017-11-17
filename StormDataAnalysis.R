@@ -7,6 +7,8 @@
 # packages we'll be using
 library(plyr)
 library(ggplot2)
+library(treemap)
+library(scales)
 
 # download data if it isn't already in place in current directory
 filename <- "repdata_data_StormData"
@@ -121,11 +123,15 @@ propDmgReportData$prop_dmg <- as.numeric(propDmgReportData$prop_dmg)
 propDmgReportData$crop_dmg <- as.numeric(propDmgReportData$crop_dmg)
 propDmgReportData$cum <- as.numeric(propDmgReportData$cum)
 propDmgReportData$running_pct <- as.numeric(propDmgReportData$running_pct)
+propDmgReportData$event_pct <- paste(propDmgReportData$EVTYPE
+                                    , percent(propDmgReportData$prop_dmg / sum(propDmgReportData$prop_dmg))
+                                    , sep="\n"
+                                    )
 
 cropDmgReportData <- cropDmgSorted[cropDmgSorted$running_pct <= threshhold, ]
 cropDmgReportData <- rbind(cropDmgReportData, c("Other"
-                             , sum(cropDmgSorted$crop_dmg) - max(cropDmgReportData$cum)
-                              , 0
+                             , 0
+                              , sum(cropDmgSorted$crop_dmg) - max(cropDmgReportData$cum)
                               , sum(cropDmgSorted$crop_dmg)
                               , 1
                               )
@@ -134,3 +140,22 @@ cropDmgReportData$prop_dmg <- as.numeric(cropDmgReportData$prop_dmg)
 cropDmgReportData$crop_dmg <- as.numeric(cropDmgReportData$crop_dmg)
 cropDmgReportData$cum <- as.numeric(cropDmgReportData$cum)
 cropDmgReportData$running_pct <- as.numeric(cropDmgReportData$running_pct)
+cropDmgReportData$event_pct <- paste(cropDmgReportData$EVTYPE
+                                     , percent(cropDmgReportData$crop_dmg / sum(cropDmgReportData$crop_dmg))
+                                     , sep="\n"
+                                    )
+
+# test treemap
+treemap(cropDmgReportData
+        , index="event_pct"
+        , vSize="crop_dmg"
+        , type="index"
+        , sortID="crop_dmg"
+)
+
+#treemap(propDmgReportData
+#        , index="event_pct"
+#        , vSize="prop_dmg"
+#        , type="index"
+#        , sortID="prop_dmg"
+#)
