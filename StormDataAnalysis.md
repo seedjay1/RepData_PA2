@@ -1,13 +1,6 @@
----
-title: "Reproducible Research: Peer-Assessed Project 2"
-author: "Christopher Jones"
-date: "11/16/2017"
-output: 
-  html_document:
-    echo: true
-    code_folding: hide
-    keep_md: true
----
+# Reproducible Research: Peer-Assessed Project 2
+Christopher Jones  
+11/16/2017  
 
 ## Historical US Storm Data Analysis:
 ## A survey of historical storm data with respect to population health and economic consequences {.tabset}
