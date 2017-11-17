@@ -123,9 +123,10 @@ propDmgReportData$prop_dmg <- as.numeric(propDmgReportData$prop_dmg)
 propDmgReportData$crop_dmg <- as.numeric(propDmgReportData$crop_dmg)
 propDmgReportData$cum <- as.numeric(propDmgReportData$cum)
 propDmgReportData$running_pct <- as.numeric(propDmgReportData$running_pct)
-propDmgReportData$event_pct <- paste(propDmgReportData$EVTYPE
-                                    , percent(propDmgReportData$prop_dmg / sum(propDmgReportData$prop_dmg))
-                                    , sep="\n"
+other_count_prop <- as.character(nrow(propDmgSorted) - nrow(propDmgReportData))
+propDmgReportData$event_pct <- paste(ifelse(propDmgReportData$EVTYPE != "Other", as.character(propDmgReportData$EVTYPE), paste("Other", paste("(", other_count_prop, ")", sep=""), sep=" "))
+                                     , percent(propDmgReportData$prop_dmg / sum(propDmgReportData$prop_dmg))
+                                     , sep="\n"
                                     )
 
 cropDmgReportData <- cropDmgSorted[cropDmgSorted$running_pct <= threshhold, ]
@@ -140,22 +141,22 @@ cropDmgReportData$prop_dmg <- as.numeric(cropDmgReportData$prop_dmg)
 cropDmgReportData$crop_dmg <- as.numeric(cropDmgReportData$crop_dmg)
 cropDmgReportData$cum <- as.numeric(cropDmgReportData$cum)
 cropDmgReportData$running_pct <- as.numeric(cropDmgReportData$running_pct)
-cropDmgReportData$event_pct <- paste(cropDmgReportData$EVTYPE
+other_count_crop <- as.character(nrow(cropDmgSorted) - nrow(cropDmgReportData))
+cropDmgReportData$event_pct <- paste(ifelse(cropDmgReportData$EVTYPE != "Other", as.character(cropDmgReportData$EVTYPE), paste("Other", paste("(", other_count_crop, ")", sep=""), sep=" "))
                                      , percent(cropDmgReportData$crop_dmg / sum(cropDmgReportData$crop_dmg))
                                      , sep="\n"
-                                    )
+)
 
-# test treemap
 treemap(cropDmgReportData
         , index="event_pct"
         , vSize="crop_dmg"
         , type="index"
-        , sortID="crop_dmg"
+#        , sortID="crop_dmg"
 )
 
-#treemap(propDmgReportData
-#        , index="event_pct"
-#        , vSize="prop_dmg"
-#        , type="index"
+treemap(propDmgReportData
+        , index="event_pct"
+        , vSize="prop_dmg"
+        , type="index"
 #        , sortID="prop_dmg"
-#)
+)
