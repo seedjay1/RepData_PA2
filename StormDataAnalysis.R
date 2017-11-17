@@ -68,3 +68,11 @@ if (readdata)
 
 str(data.raw)
 
+data.proc <- data.raw[,c("EVTYPE", "FATALITIES", "INJURIES", "PROPDMG","PROPDMGEXP","CROPDMG","CROPDMGEXP")]
+
+denominations <- list(list(c('h', 'H'), 2)
+                      , list(c('t', 'T'), 3)
+                      , list(c('m', 'M'), 6)
+                      , list(c('b', 'B'), 9)
+                  )
+

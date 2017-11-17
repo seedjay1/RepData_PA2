@@ -1,0 +1,187 @@
+---
+title: "Reproducible Research: Peer-Assessed Project 2"
+author: "Christopher Jones"
+date: "11/16/2017"
+output: 
+  html_document:
+    echo: true
+    code_folding: hide
+    keep_md: true
+---
+
+## Historical US Storm Data Analysis:
+## A survey of historical storm data with respect to population health and economic consequences {.tabset}
+
+### Synopsis:
+
+We examine historical US storm data from NOAA, to assess types of events that are most harmful to human health, and also which types of events have the greatest economic consequences.
+
+Primary findings:  
+
+* Finding 1
+* Finding 2
+* Finding 3
+
+### Data Loading/Processing
+
+#### Loading:
+
+Loading the data is simple; the code is more lengthy because it is general-purpose, checking for the minimal amount of work to be done to load (need download? need unzip? only need to read the file?).
+
+```{r data_load}
+# =======================
+# Data loader
+# =======================
+
+# download data if it isn't already in place in current directory
+filename <- "repdata_data_StormData"
+extension.data <- ".csv"
+extension.zip <- ".bz2"
+zipurl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+
+if (!file.exists(paste(filename, extension.data, sep=''))) 
+{
+  message("Data file not found, checking for data zip file
+          ")
+  if (!file.exists(paste(c(filename, extension.data, extension.zip), collapse='')))
+  {
+    message("Data zip file not found. Downloading.")
+    
+    download <- download.file(zipurl, destfile=paste(c(filename, extension.data, extension.zip), collapse=''))
+    foundzip <- TRUE
+    
+    message("Data zip file downloaded.")
+  } else
+  {
+    foundzip <- TRUE
+  }
+  
+  if (foundzip)
+  {
+    message("Found data zip file, unzipping.")
+    
+    library(R.utils)
+    bunzip2(paste(c(filename, extension.data, extension.zip), collapse='')
+            , paste(c(filename, extension.data), collapse='')
+            , remove = FALSE
+            , overwrite = TRUE
+            )
+    unlink(paste(filename, extension.zip, sep=''))
+    
+    message("Data zip file unzipped.")
+  }
+  
+  if (file.exists(paste(filename, extension.data, sep=''))) 
+  {
+    message("Data file exists, ready for preprocessing")
+  } else
+  {
+    stop("Data file not found, reason unknown. Halting execution.")
+  }
+}
+
+# read data only if not already loaded
+readdata <- TRUE
+if (exists("data.raw"))
+{
+  if(nrow(data.raw) == 902297) # hardcoding numbers is bad m'kay?
+  {
+    readdata <- FALSE
+  }
+}
+if (readdata)
+{
+  message("Reading data file:")
+  data.raw <- read.csv(paste(filename, extension.data, sep=''), header=TRUE)
+}
+
+str(data.raw)
+```
+
+#### Processing:
+
+From the raw data, we perform the following processing steps:
+
+* Subset out the columns needed to analyze storm event consequences on population health and the economy
+* Convert dollar value orders of magnitude into actual dollar amounts
+* Anything else
+
+```{r data_processing}
+data.proc <- data.raw[,c("EVTYPE", "FATALITIES", "INJURIES", "PROPDMG","PROPDMGEXP","CROPDMG","CROPDMGEXP")]
+
+denominations <- list(list(c('h', 'H'), 2)
+                      , list(c('t', 'T'), 3)
+                      , list(c('m', 'M'), 6)
+                      , list(c('b', 'B'), 9)
+                  )
+
+```
+
+### Results: Health
+
+Instructions:
+
+>What is mean total number of steps taken per day?
+>
+>For this part of the assignment, you can ignore the missing values in the dataset.
+>
+>Make a histogram of the total number of steps taken each day
+>
+>Calculate and report the mean and median total number of steps taken per day
+
+The required information is provided by the plot below, using the complete observations dataset, per the instructions.
+
+```{r steps_per_day}
+1+1
+```
+
+
+### Results: Economic
+
+Instructions:
+
+>What is the average daily activity pattern?
+>
+>Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+>
+>Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+
+In addition to answering the questions given, I've provided a smoothing line. The average daily activty pattern is depicted below. On average, the maximum number of steps occurs at interval 835.
+
+```{r daily_activity_pattern}
+2+2
+```
+
+
+### References
+
+Instructions:
+
+>Note that there are a number of days/intervals where there are missing values (coded as NA). The presence of missing days may introduce bias into some calculations or summaries of the data.
+>
+>Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
+>
+>Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated.
+>
+>For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
+>
+>Create a new dataset that is equal to the original dataset but with the missing data filled in.
+>
+>Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+
+
+For missing values, we use the predictive mean matching method from the commonly-used mice package (2 data sets, 10 iterations).
+
+Finally, we perform the imputation, and produce a before/after comparative visual:
+
+```{r imputed_values}
+3+3
+```
+
+This plot contains 2 parts: a before/after histogram, and before/after linear density plots along the top and bottom borders. 
+
+Overall the imputation didn't affect the character of the data very much (at least not visible in the histogram). Most of the new weight was added above the mean/median (they're close together), so the immputed mean/median ticked upwards slightly. And since most of the added weight was near the mean/median, the standard deviation shows a bit of a decrease.
+
+
+fin
+
