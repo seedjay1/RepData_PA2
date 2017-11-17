@@ -313,21 +313,14 @@ denominations &lt;- list(list(c('h', 'H'), 2)
 </div>
 <div id="references" class="section level3">
 <h3>References</h3>
-<p>Instructions:</p>
-<blockquote>
-<p>Note that there are a number of days/intervals where there are missing values (coded as NA). The presence of missing days may introduce bias into some calculations or summaries of the data.</p>
-<p>Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)</p>
-<p>Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated.</p>
-<p>For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.</p>
-<p>Create a new dataset that is equal to the original dataset but with the missing data filled in.</p>
-<p>Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?</p>
-</blockquote>
+<p>population: <a href="https://seer.cancer.gov/popdata/download.html" class="uri">https://seer.cancer.gov/popdata/download.html</a> <a href="https://seer.cancer.gov/popdata/yr1969_2015.singleages/us.1969_2015.singleages.adjusted.exe" class="uri">https://seer.cancer.gov/popdata/yr1969_2015.singleages/us.1969_2015.singleages.adjusted.exe</a> population dictionary: <a href="https://seer.cancer.gov/popdata/popdic.html" class="uri">https://seer.cancer.gov/popdata/popdic.html</a></p>
+<p>fields are parsed by character count, per the following example. see the dictionary link above to interpret the race, etc. codes.</p>
+<p>year state state county seer race orig sex age population fips fips reg 1969 AL 01 001 99 1 9 1 00 00000159</p>
+<p>1969AL01001991910100000657 1969AL01001991910200001137 1969AL01001991910300000956</p>
 <p>For missing values, we use the predictive mean matching method from the commonly-used mice package (2 data sets, 10 iterations).</p>
 <p>Finally, we perform the imputation, and produce a before/after comparative visual:</p>
 <pre class="r"><code>3+3</code></pre>
 <pre><code>## [1] 6</code></pre>
-<p>This plot contains 2 parts: a before/after histogram, and before/after linear density plots along the top and bottom borders.</p>
-<p>Overall the imputation didn’t affect the character of the data very much (at least not visible in the histogram). Most of the new weight was added above the mean/median (they’re close together), so the immputed mean/median ticked upwards slightly. And since most of the added weight was near the mean/median, the standard deviation shows a bit of a decrease.</p>
 <p>fin</p>
 </div>
 </div>
