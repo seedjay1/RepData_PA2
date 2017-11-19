@@ -1,25 +1,61 @@
-# Reproducible Research: Peer-Assessed Project 2
-Christopher Jones  
-11/16/2017  
+---
+title: "Reproducible Research: Peer-Assessed Project 2"
+author: "Christopher Jones"
+date: "11/16/2017"
+output: 
+  html_document:
+    echo: true
+    code_folding: hide
+    keep_md: true
+---
 
 ## Historical US Storm Data Analysis:
 ## A survey of historical storm data with respect to population health and economic consequences {.tabset}
 
-### Synopsis:
+### Synopsis
 
 We examine historical US storm data from NOAA, to assess types of events that are most harmful to human health, and also which types of events have the greatest economic consequences.
 
 Primary findings:  
 
-* Finding 1
-* Finding 2
-* Finding 3
+* Tornadoes are the largest historical contributor to weather event fatalities, at 37%
+* Tornadoes are also the largest historical cause of weather event injury, at 65%
+* Drought is the largest cause of crop damage at almost $14 billion.
+* Flooding is the largest cause of property damage at over $144.5 billion.
+* A fuller analysis would need to take into account variables like geography, date, age, and currency depreciation.
 
 ### Data Loading/Processing
 
-#### Loading:
+#### Data Loading:
 
 Loading the data is simple; the code is more lengthy because it is general-purpose, checking for the minimal amount of work to be done to load (need download? need unzip? only need to read the file?).
+
+First we load the packages to be used in this report.
+
+
+```r
+# packages we'll be using
+library(plyr)
+library(ggplot2)
+library(grid)
+library(gridBase)
+library(treemap)
+library(scales)
+library(formattable)
+```
+
+```
+## 
+## Attaching package: 'formattable'
+```
+
+```
+## The following objects are masked from 'package:scales':
+## 
+##     comma, percent, scientific
+```
+
+Next we load the storm data into memory. This code includes multiple checks to load the data with a minimum of effort.
 
 
 ```r
@@ -27,9 +63,7 @@ Loading the data is simple; the code is more lengthy because it is general-purpo
 # Data loader
 # =======================
 
-# packages we'll be using
-library(plyr)
-library(ggplot2)
+
 
 # download data if it isn't already in place in current directory
 filename <- "repdata_data_StormData"
@@ -99,155 +133,328 @@ if (readdata)
 ```
 
 ```r
-str(data.raw)
+message("Raw data loaded.")
 ```
 
 ```
-## 'data.frame':	902297 obs. of  37 variables:
-##  $ STATE__   : num  1 1 1 1 1 1 1 1 1 1 ...
-##  $ BGN_DATE  : Factor w/ 16335 levels "1/1/1966 0:00:00",..: 6523 6523 4242 11116 2224 2224 2260 383 3980 3980 ...
-##  $ BGN_TIME  : Factor w/ 3608 levels "00:00:00 AM",..: 272 287 2705 1683 2584 3186 242 1683 3186 3186 ...
-##  $ TIME_ZONE : Factor w/ 22 levels "ADT","AKS","AST",..: 7 7 7 7 7 7 7 7 7 7 ...
-##  $ COUNTY    : num  97 3 57 89 43 77 9 123 125 57 ...
-##  $ COUNTYNAME: Factor w/ 29601 levels "","5NM E OF MACKINAC BRIDGE TO PRESQUE ISLE LT MI",..: 13513 1873 4598 10592 4372 10094 1973 23873 24418 4598 ...
-##  $ STATE     : Factor w/ 72 levels "AK","AL","AM",..: 2 2 2 2 2 2 2 2 2 2 ...
-##  $ EVTYPE    : Factor w/ 985 levels "   HIGH SURF ADVISORY",..: 834 834 834 834 834 834 834 834 834 834 ...
-##  $ BGN_RANGE : num  0 0 0 0 0 0 0 0 0 0 ...
-##  $ BGN_AZI   : Factor w/ 35 levels "","  N"," NW",..: 1 1 1 1 1 1 1 1 1 1 ...
-##  $ BGN_LOCATI: Factor w/ 54429 levels "","- 1 N Albion",..: 1 1 1 1 1 1 1 1 1 1 ...
-##  $ END_DATE  : Factor w/ 6663 levels "","1/1/1993 0:00:00",..: 1 1 1 1 1 1 1 1 1 1 ...
-##  $ END_TIME  : Factor w/ 3647 levels ""," 0900CST",..: 1 1 1 1 1 1 1 1 1 1 ...
-##  $ COUNTY_END: num  0 0 0 0 0 0 0 0 0 0 ...
-##  $ COUNTYENDN: logi  NA NA NA NA NA NA ...
-##  $ END_RANGE : num  0 0 0 0 0 0 0 0 0 0 ...
-##  $ END_AZI   : Factor w/ 24 levels "","E","ENE","ESE",..: 1 1 1 1 1 1 1 1 1 1 ...
-##  $ END_LOCATI: Factor w/ 34506 levels "","- .5 NNW",..: 1 1 1 1 1 1 1 1 1 1 ...
-##  $ LENGTH    : num  14 2 0.1 0 0 1.5 1.5 0 3.3 2.3 ...
-##  $ WIDTH     : num  100 150 123 100 150 177 33 33 100 100 ...
-##  $ F         : int  3 2 2 2 2 2 2 1 3 3 ...
-##  $ MAG       : num  0 0 0 0 0 0 0 0 0 0 ...
-##  $ FATALITIES: num  0 0 0 0 0 0 0 0 1 0 ...
-##  $ INJURIES  : num  15 0 2 2 2 6 1 0 14 0 ...
-##  $ PROPDMG   : num  25 2.5 25 2.5 2.5 2.5 2.5 2.5 25 25 ...
-##  $ PROPDMGEXP: Factor w/ 19 levels "","-","?","+",..: 17 17 17 17 17 17 17 17 17 17 ...
-##  $ CROPDMG   : num  0 0 0 0 0 0 0 0 0 0 ...
-##  $ CROPDMGEXP: Factor w/ 9 levels "","?","0","2",..: 1 1 1 1 1 1 1 1 1 1 ...
-##  $ WFO       : Factor w/ 542 levels ""," CI","$AC",..: 1 1 1 1 1 1 1 1 1 1 ...
-##  $ STATEOFFIC: Factor w/ 250 levels "","ALABAMA, Central",..: 1 1 1 1 1 1 1 1 1 1 ...
-##  $ ZONENAMES : Factor w/ 25112 levels "","                                                                                                               "| __truncated__,..: 1 1 1 1 1 1 1 1 1 1 ...
-##  $ LATITUDE  : num  3040 3042 3340 3458 3412 ...
-##  $ LONGITUDE : num  8812 8755 8742 8626 8642 ...
-##  $ LATITUDE_E: num  3051 0 0 0 0 ...
-##  $ LONGITUDE_: num  8806 0 0 0 0 ...
-##  $ REMARKS   : Factor w/ 436774 levels "","-2 at Deer Park\n",..: 1 1 1 1 1 1 1 1 1 1 ...
-##  $ REFNUM    : num  1 2 3 4 5 6 7 8 9 10 ...
+## Raw data loaded.
 ```
 
-#### Processing:
+#### Data Processing:
 
-From the raw data, we perform the following processing steps:
+Next we perform data processing. For the multiple output analyses required, this is somewhat lengthy, but not complicated.
 
-* Subset out the columns needed to analyze storm event consequences on population health and the economy
-* Convert dollar value orders of magnitude into actual dollar amounts
-* Anything else
+The following steps are performed in the below code chunks:
+
+1. Subset the data with only the fields needed for this project
+2. For the economic damage, convert order of magnitude exponents into complete dollar amounts
+3. Summarize into aggregate totals
+4. There are many (~1,000) distinct storm events, to to aid the user in focussing on the highest impact events, we do the following:
+    + For economic analysis, remove events which have no property or crop damage
+    + For health analysis, remove events which have no deaths or injuries
+    + For each analysis, order the events by descending dollar/fatality/injury value, and take events from the top until a THRESHHOLD of 85% of the total loss is reached. The remaining events are then lumped into an Other category and included in the output. This THRESHHOLD computation is implemented by the creation of running total/percentage columns to the aggregated data.
+
+
+Processing common to both health and economic analyses:
 
 
 ```r
-# Data processing
+#===========================
+# Data processing - common
+#===========================
 
 # project out the columns we're interested in
 data.proc <- data.raw[,c("EVTYPE", "FATALITIES", "INJURIES", "PROPDMG","PROPDMGEXP","CROPDMG","CROPDMGEXP")]
-
-# perform order of magnitude calculation to get actual dollar amounts for prop & crop damage
-data.proc$prop_dmg <- data.proc$PROPDMG * sapply(data.proc$PROPDMGEXP, function(str_exp) {switch(tolower(str_exp), "h" = 100, "k" = 1000, "m" = 1000000, "b" = 1000000000, 0)})
-data.proc$crop_dmg <- data.proc$CROPDMG * sapply(data.proc$CROPDMGEXP, function(str_exp) {switch(tolower(str_exp), "h" = 100, "k" = 1000, "m" = 1000000, "b" = 1000000000, 0)})
-
-# create totals by event for prop & crop damage value
-econ_dmg <- ddply(data.proc, .(EVTYPE), summarize, prop_dmg = sum(prop_dmg), crop_dmg = sum(crop_dmg))
-econ_dmg <- econ_dmg[(econ_dmg$prop_dmg > 0 | econ_dmg$crop_dmg > 0), ]
-
-# create totals by event for health damage
-health_dmg <- ddply(data.proc, .(EVTYPE), summarize, fat = sum(FATALITIES), inj = sum(INJURIES))
 ```
 
-### Results: Health
-
-Instructions:
-
->What is mean total number of steps taken per day?
->
->For this part of the assignment, you can ignore the missing values in the dataset.
->
->Make a histogram of the total number of steps taken each day
->
->Calculate and report the mean and median total number of steps taken per day
-
-The required information is provided by the plot below, using the complete observations dataset, per the instructions.
+Processing for only economic analyses:
 
 
 ```r
-1+1
+# perform order of magnitude calculation to get actual dollar amounts for prop & crop damage
+data.proc$prop_dmg <- data.proc$PROPDMG * sapply(data.proc$PROPDMGEXP, function(str_exp) {switch(tolower(str_exp), "h" = 100, "k" = 1000, "m" = 1000000, "b" = 1000000000, if (is.numeric(str_exp)) 10 ** as.numeric(str_exp) else 1)})
+data.proc$crop_dmg <- data.proc$CROPDMG * sapply(data.proc$CROPDMGEXP, function(str_exp) {switch(tolower(str_exp), "h" = 100, "k" = 1000, "m" = 1000000, "b" = 1000000000, if (is.numeric(str_exp)) 10 ** as.numeric(str_exp) else 1)})
+
+# create totals by event for prop & crop damage value
+econ_dmg <- ddply(data.proc, .(EVTYPE), summarize, prop_dmg = sum(prop_dmg), crop_dmg = sum(crop_dmg))
+
+# only interested in events with damage
+econ_dmg <- econ_dmg[(econ_dmg$prop_dmg > 0 | econ_dmg$crop_dmg > 0), ]
+
+# create running total and % of total
+propDmgSorted <- econ_dmg[order(econ_dmg$prop_dmg, decreasing = T), ]
+propDmgSorted$cum <- cumsum(propDmgSorted$prop_dmg)
+propDmgSorted$running_pct <- propDmgSorted$cum / sum(propDmgSorted$prop_dmg)
+
+cropDmgSorted <- econ_dmg[order(econ_dmg$crop_dmg, decreasing = T), ]
+cropDmgSorted$cum <- cumsum(cropDmgSorted$crop_dmg)
+cropDmgSorted$running_pct <- cropDmgSorted$cum / sum(cropDmgSorted$crop_dmg)
+
+head(propDmgSorted[, c("EVTYPE", "prop_dmg")], 5)
 ```
 
 ```
-## [1] 2
+##                EVTYPE     prop_dmg
+## 170             FLOOD 144657709807
+## 411 HURRICANE/TYPHOON  69305840000
+## 834           TORNADO  56937160779
+## 670       STORM SURGE  43323536000
+## 153       FLASH FLOOD  16140812067
 ```
+
+```r
+head(cropDmgSorted[, c("EVTYPE", "crop_dmg")], 5)
+```
+
+```
+##          EVTYPE    crop_dmg
+## 95      DROUGHT 13972566000
+## 170       FLOOD  5661968450
+## 590 RIVER FLOOD  5029459000
+## 427   ICE STORM  5022113500
+## 244        HAIL  3025954473
+```
+
+```r
+# we take 90% of total damage as threshhold to include in report, 
+# and create an Other event category for the rest.
+threshhold <- .85
+
+# property damage report data
+propDmgReportData <- propDmgSorted[propDmgSorted$running_pct <= threshhold, ]
+propDmgReportData <- rbind(propDmgReportData, c("Other"
+                                              , sum(propDmgSorted$prop_dmg) - max(propDmgReportData$cum)
+                                              , 0
+                                              , sum(propDmgSorted$prop_dmg)
+                                              , 1
+                                              )
+                                            )
+propDmgReportData$prop_dmg <- as.numeric(propDmgReportData$prop_dmg)
+propDmgReportData$crop_dmg <- as.numeric(propDmgReportData$crop_dmg)
+propDmgReportData$cum <- as.numeric(propDmgReportData$cum)
+propDmgReportData$running_pct <- as.numeric(propDmgReportData$running_pct)
+other_count_prop <- as.character(nrow(propDmgSorted) - nrow(propDmgReportData) + 1)
+propDmgReportData$event_pct <- paste(ifelse(propDmgReportData$EVTYPE != "Other", as.character(propDmgReportData$EVTYPE), paste("Other", paste("(", other_count_prop, ")", sep=""), sep=" "))
+                                     , currency(propDmgReportData$prop_dmg, digits=0L)
+                                     , percent(propDmgReportData$prop_dmg / sum(propDmgReportData$prop_dmg))
+                                     , sep="\n"
+                                    )
+
+# crop damage report data
+cropDmgReportData <- cropDmgSorted[cropDmgSorted$running_pct <= threshhold, ]
+cropDmgReportData <- rbind(cropDmgReportData, c("Other"
+                             , 0
+                              , sum(cropDmgSorted$crop_dmg) - max(cropDmgReportData$cum)
+                              , sum(cropDmgSorted$crop_dmg)
+                              , 1
+                              )
+                            )
+cropDmgReportData$prop_dmg <- as.numeric(cropDmgReportData$prop_dmg)
+cropDmgReportData$crop_dmg <- as.numeric(cropDmgReportData$crop_dmg)
+cropDmgReportData$cum <- as.numeric(cropDmgReportData$cum)
+cropDmgReportData$running_pct <- as.numeric(cropDmgReportData$running_pct)
+other_count_crop <- as.character(nrow(cropDmgSorted) - nrow(cropDmgReportData) + 1)
+cropDmgReportData$event_pct <- paste(ifelse(cropDmgReportData$EVTYPE != "Other", as.character(cropDmgReportData$EVTYPE), paste("Other", paste("(", other_count_crop, ")", sep=""), sep=" "))
+                                     , currency(cropDmgReportData$crop_dmg, digits=0L)
+                                     , percent(cropDmgReportData$crop_dmg / sum(cropDmgReportData$crop_dmg))
+                                     , sep="\n"
+)
+
+message("Economic damage report data created.")
+```
+
+```
+## Economic damage report data created.
+```
+
+Processing for only health damage:
+
+
+```r
+# create totals by event for health damage
+health_dmg <- ddply(data.proc, .(EVTYPE), summarize, fat = sum(FATALITIES), inj = sum(INJURIES))
+
+# only interested in events with deaths or injuries
+health_dmg <- health_dmg[(health_dmg$fat > 0 | health_dmg$inj > 0), ]
+
+# create running total and % of total
+fatSorted <- health_dmg[order(health_dmg$fat, decreasing = T), ]
+injSorted <- health_dmg[order(health_dmg$inj, decreasing = T), ]
+
+fatSorted$cum <- cumsum(fatSorted$fat)
+injSorted$cum <- cumsum(injSorted$inj)
+
+fatSorted$running_pct <- fatSorted$cum / sum(fatSorted$fat)
+injSorted$running_pct <- injSorted$cum / sum(injSorted$inj)
+
+head(fatSorted[, c("EVTYPE", "fat")], 5)
+```
+
+```
+##             EVTYPE  fat
+## 834        TORNADO 5633
+## 130 EXCESSIVE HEAT 1903
+## 153    FLASH FLOOD  978
+## 275           HEAT  937
+## 464      LIGHTNING  816
+```
+
+```r
+head(injSorted[, c("EVTYPE", "inj")], 5)
+```
+
+```
+##             EVTYPE   inj
+## 834        TORNADO 91346
+## 856      TSTM WIND  6957
+## 170          FLOOD  6789
+## 130 EXCESSIVE HEAT  6525
+## 464      LIGHTNING  5230
+```
+
+```r
+# we take the events totalling 85% of the fatalties/injuries
+th_health <- .85
+
+# fatality report data
+fatReportData <- fatSorted[fatSorted$running_pct <= th_health, ]
+fatReportData <- rbind(fatReportData, c("Other"
+                                          , sum(fatSorted$fat) - max(fatReportData$cum)
+                                          , 0
+                                          , sum(fatSorted$fat)
+                                          , 1
+                                        )
+                      )
+fatReportData$fat <- as.numeric(fatReportData$fat)
+fatReportData$inj <- as.numeric(fatReportData$inj)
+fatReportData$cum <- as.numeric(fatReportData$cum)
+fatReportData$running_pct <- as.numeric(fatReportData$running_pct)
+other_count_fat <- as.character(nrow(fatSorted) - nrow(fatReportData) + 1)
+fatReportData$event_pct <- paste(ifelse(fatReportData$EVTYPE != "Other", as.character(fatReportData$EVTYPE), paste("Other", paste("(", other_count_fat, ")", sep=""), sep=" "))
+                                     , formatC(sum(fatSorted$fat), format="d", big.mark=",")
+                                     , percent(fatReportData$fat / sum(fatReportData$fat))
+                                     , sep="\n"
+)
+
+# injury report data
+injReportData <- injSorted[injSorted$running_pct <= th_health, ]
+injReportData <- rbind(injReportData, c("Other"
+                                          , 0
+                                          , sum(injSorted$inj) - max(injReportData$cum)
+                                          , sum(injSorted$inj)
+                                          , 1
+                                        )
+                      )
+injReportData$fat <- as.numeric(injReportData$fat)
+injReportData$inj <- as.numeric(injReportData$inj)
+injReportData$cum <- as.numeric(injReportData$cum)
+injReportData$running_pct <- as.numeric(injReportData$running_pct)
+other_count_inj <- as.character(nrow(injSorted) - nrow(injReportData) + 1)
+injReportData$event_pct <- paste(ifelse(injReportData$EVTYPE != "Other", as.character(injReportData$EVTYPE), paste("Other", paste("(", other_count_inj, ")", sep=""), sep=" "))
+                                     , formatC(sum(injSorted$inj), format="d", big.mark=",")
+                                     , percent(injReportData$inj / sum(injReportData$inj))
+                                     , sep="\n"
+                                )
+
+message("Health damage report data created.")
+```
+
+```
+## Health damage report data created.
+```
+
+
+### Results: Health
+
+To easily visualize the comparative historical impacts of weather events, we use tree maps. Below are tree maps showing the fatalities and injuries from events. 
+
+As described earlier, the "Other" category is the catch-all for all the events remaining after those responsible for 85% of the fatalities/injuries we picked out.
+
+
+```r
+# make health impact visualizations
+par(oma=c(1, 1, 1, 1))
+grid.newpage()
+grid.rect()
+pushViewport(viewport(layout=grid.layout(2, 1)))
+
+vp1 <- viewport(layout.pos.col=1, layout.pos.row=1)
+pushViewport(vp1)
+treemap(fatReportData
+        , index="event_pct"
+        , vSize="fat"
+        , type="index"
+        , fontsize.title=14
+        , title= paste("Fatalities By Event, 1950-2011 - Total: ", formatC(sum(fatSorted$fat), format="d", big.mark=","), sep='')
+        , vp=vp1
+)
+popViewport()
+
+vp2 <- viewport(layout.pos.col=1, layout.pos.row=2)
+pushViewport(vp2)
+treemap(injReportData
+        , index="event_pct"
+        , vSize="inj"
+        , type="index"
+        , fontsize.title=14
+        , title= paste("Injuries By Event, 1950-2011 - Total: ", formatC(sum(injSorted$inj), format="d", big.mark=","), sep='')
+        , vp=vp2
+)
+popViewport()
+```
+
+![](StormDataAnalysis_files/figure-html/health_damage-1.png)<!-- -->
 
 
 ### Results: Economic
 
-Instructions:
+To easily visualize the comparative historical impacts of weather events, we again use tree maps. Below are tree maps showing the (unadjusted) USD value of crop and property damage from weather events. 
 
->What is the average daily activity pattern?
->
->Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
->
->Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
-
-In addition to answering the questions given, I've provided a smoothing line. The average daily activty pattern is depicted below. On average, the maximum number of steps occurs at interval 835.
+As described in the Processing sub-section, the "Other" category is the catch-all for all the events remaining after those responsible for 85% of the fatalities/injuries we picked out.
 
 
 ```r
-2+2
+# make economic damage visualization
+par(oma=c(1, 1, 1, 1))
+grid.newpage()
+grid.rect()
+pushViewport(viewport(layout=grid.layout(2, 1)))
+
+vp1 <- viewport(layout.pos.col=1, layout.pos.row=1)
+pushViewport(vp1)
+treemap(cropDmgReportData
+        , index='event_pct'
+        , vSize='crop_dmg'
+        , type='index'
+        , fontsize.title=14
+        , title= paste('Crop Damage By Event, 1950-2011 - Total: ', currency(sum(cropDmgSorted$crop_dmg), digits=0L), sep='')
+        , vp=vp1
+)
+popViewport()
+
+vp2 <- viewport(layout.pos.col=1, layout.pos.row=2)
+pushViewport(vp2)
+treemap(propDmgReportData
+        , index='event_pct'
+        , vSize='prop_dmg'
+        , type='index'
+        , fontsize.title=14
+        , title= paste('Property Damage By Event, 1950-2011 - Total: ', currency(sum(propDmgSorted$prop_dmg), digits=0L), sep='')
+        , vp=vp2
+)
+popViewport()
 ```
 
-```
-## [1] 4
-```
+![](StormDataAnalysis_files/figure-html/economic_damage-1.png)<!-- -->
 
 
 ### References
 
-population: 
-	https://seer.cancer.gov/popdata/download.html 
-	https://seer.cancer.gov/popdata/yr1969_2015.singleages/us.1969_2015.singleages.adjusted.exe
-population dictionary: 
-	https://seer.cancer.gov/popdata/popdic.html
+Coursera page for this project: https://www.coursera.org/learn/reproducible-research/peer/OMZ37/course-project-2
 
-fields are parsed by character count, per the following example. see the dictionary link above to interpret the race, etc. codes.
+My github repo for this project: https://github.com/seedjay1/RepData_PA2
 
-year	state	state	county	seer	race	orig	sex		age		population
-				fips	fips	reg
-1969	AL		01		001		99		1		9		1		00		00000159
+Raw data used for the analysis: https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2
 
-
-1969AL01001991910100000657
-1969AL01001991910200001137
-1969AL01001991910300000956
-
-For missing values, we use the predictive mean matching method from the commonly-used mice package (2 data sets, 10 iterations).
-
-Finally, we perform the imputation, and produce a before/after comparative visual:
-
-
-```r
-3+3
-```
-
-```
-## [1] 6
-```
-
-
-fin
+RPubs link for this report: http://rpubs.com/seedjay/sda
 

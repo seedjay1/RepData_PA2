@@ -7,8 +7,12 @@
 # packages we'll be using
 library(plyr)
 library(ggplot2)
+library(grid)
+library(gridBase)
 library(treemap)
 library(scales)
+library(formattable)
+
 
 # download data if it isn't already in place in current directory
 filename <- "repdata_data_StormData"
@@ -72,17 +76,16 @@ if (readdata)
   data.raw <- read.csv(paste(filename, extension.data, sep=''), header=TRUE)
 }
 
-# str(data.raw)
+message("Raw data loaded.")
 
-# Data processing
+#===========================
+# Data processing - economic
+#===========================
 
 # project out the columns we're interested in
 data.proc <- data.raw[,c("EVTYPE", "FATALITIES", "INJURIES", "PROPDMG","PROPDMGEXP","CROPDMG","CROPDMGEXP")]
 
 # perform order of magnitude calculation to get actual dollar amounts for prop & crop damage
-#data.proc$prop_dmg <- data.proc$PROPDMG * sapply(data.proc$PROPDMGEXP, function(str_exp) {switch(tolower(str_exp), "h" = 100, "k" = 1000, "m" = 1000000, "b" = 1000000000, 0)})
-#data.proc$crop_dmg <- data.proc$CROPDMG * sapply(data.proc$CROPDMGEXP, function(str_exp) {switch(tolower(str_exp), "h" = 100, "k" = 1000, "m" = 1000000, "b" = 1000000000, 0)})
-
 data.proc$prop_dmg <- data.proc$PROPDMG * sapply(data.proc$PROPDMGEXP, function(str_exp) {switch(tolower(str_exp), "h" = 100, "k" = 1000, "m" = 1000000, "b" = 1000000000, if (is.numeric(str_exp)) 10 ** as.numeric(str_exp) else 1)})
 data.proc$crop_dmg <- data.proc$CROPDMG * sapply(data.proc$CROPDMGEXP, function(str_exp) {switch(tolower(str_exp), "h" = 100, "k" = 1000, "m" = 1000000, "b" = 1000000000, if (is.numeric(str_exp)) 10 ** as.numeric(str_exp) else 1)})
 
@@ -107,11 +110,12 @@ cropDmgSorted$running_pct <- cropDmgSorted$cum / sum(cropDmgSorted$crop_dmg)
 head(propDmgSorted[, c("EVTYPE", "prop_dmg")], 5)
 head(cropDmgSorted[, c("EVTYPE", "crop_dmg")], 5)
 
-# we take 90% of total damage as threshhold to include in report, 
-# and create an Others event category for the rest.
-threshhold <- .9
-propDmgReportData <- propDmgSorted[propDmgSorted$running_pct <= threshhold, ]
+# we take 85% of total damage as threshhold to include in report, 
+# and create an Other event category for the rest.
+threshhold <- .85
 
+# property damage report data
+propDmgReportData <- propDmgSorted[propDmgSorted$running_pct <= threshhold, ]
 propDmgReportData <- rbind(propDmgReportData, c("Other"
                                               , sum(propDmgSorted$prop_dmg) - max(propDmgReportData$cum)
                                               , 0
@@ -123,12 +127,14 @@ propDmgReportData$prop_dmg <- as.numeric(propDmgReportData$prop_dmg)
 propDmgReportData$crop_dmg <- as.numeric(propDmgReportData$crop_dmg)
 propDmgReportData$cum <- as.numeric(propDmgReportData$cum)
 propDmgReportData$running_pct <- as.numeric(propDmgReportData$running_pct)
-other_count_prop <- as.character(nrow(propDmgSorted) - nrow(propDmgReportData))
+other_count_prop <- as.character(nrow(propDmgSorted) - nrow(propDmgReportData) + 1)
 propDmgReportData$event_pct <- paste(ifelse(propDmgReportData$EVTYPE != "Other", as.character(propDmgReportData$EVTYPE), paste("Other", paste("(", other_count_prop, ")", sep=""), sep=" "))
+                                     , currency(propDmgReportData$prop_dmg, digits=0L)
                                      , percent(propDmgReportData$prop_dmg / sum(propDmgReportData$prop_dmg))
                                      , sep="\n"
                                     )
 
+# crop damage report data
 cropDmgReportData <- cropDmgSorted[cropDmgSorted$running_pct <= threshhold, ]
 cropDmgReportData <- rbind(cropDmgReportData, c("Other"
                              , 0
@@ -141,22 +147,138 @@ cropDmgReportData$prop_dmg <- as.numeric(cropDmgReportData$prop_dmg)
 cropDmgReportData$crop_dmg <- as.numeric(cropDmgReportData$crop_dmg)
 cropDmgReportData$cum <- as.numeric(cropDmgReportData$cum)
 cropDmgReportData$running_pct <- as.numeric(cropDmgReportData$running_pct)
-other_count_crop <- as.character(nrow(cropDmgSorted) - nrow(cropDmgReportData))
+other_count_crop <- as.character(nrow(cropDmgSorted) - nrow(cropDmgReportData) + 1)
 cropDmgReportData$event_pct <- paste(ifelse(cropDmgReportData$EVTYPE != "Other", as.character(cropDmgReportData$EVTYPE), paste("Other", paste("(", other_count_crop, ")", sep=""), sep=" "))
+                                     , currency(cropDmgReportData$crop_dmg, digits=0L)
                                      , percent(cropDmgReportData$crop_dmg / sum(cropDmgReportData$crop_dmg))
                                      , sep="\n"
 )
 
+
+#===========================
+# Data processing - health
+#===========================
+
+# create totals by event for health damage
+health_dmg <- ddply(data.proc, .(EVTYPE), summarize, fat = sum(FATALITIES), inj = sum(INJURIES))
+
+# only interested in events with deaths or injuries
+health_dmg <- health_dmg[(health_dmg$fat > 0 | health_dmg$inj > 0), ]
+
+# create running total and % of total
+fatSorted <- health_dmg[order(health_dmg$fat, decreasing = T), ]
+injSorted <- health_dmg[order(health_dmg$inj, decreasing = T), ]
+
+fatSorted$cum <- cumsum(fatSorted$fat)
+injSorted$cum <- cumsum(injSorted$inj)
+
+fatSorted$running_pct <- fatSorted$cum / sum(fatSorted$fat)
+injSorted$running_pct <- injSorted$cum / sum(injSorted$inj)
+
+head(fatSorted[, c("EVTYPE", "fat")], 5)
+head(injSorted[, c("EVTYPE", "inj")], 5)
+
+# we take the events totalling 85% of the fatalties/injuries
+th_health <- .85
+
+# fatality report data
+fatReportData <- fatSorted[fatSorted$running_pct <= th_health, ]
+fatReportData <- rbind(fatReportData, c("Other"
+                                          , sum(fatSorted$fat) - max(fatReportData$cum)
+                                          , 0
+                                          , sum(fatSorted$fat)
+                                          , 1
+                                        )
+                      )
+fatReportData$fat <- as.numeric(fatReportData$fat)
+fatReportData$inj <- as.numeric(fatReportData$inj)
+fatReportData$cum <- as.numeric(fatReportData$cum)
+fatReportData$running_pct <- as.numeric(fatReportData$running_pct)
+other_count_fat <- as.character(nrow(fatSorted) - nrow(fatReportData) + 1)
+fatReportData$event_pct <- paste(ifelse(fatReportData$EVTYPE != "Other", as.character(fatReportData$EVTYPE), paste("Other", paste("(", other_count_fat, ")", sep=""), sep=" "))
+                                     , formatC(sum(fatSorted$fat), format="d", big.mark=",")
+                                     , percent(fatReportData$fat / sum(fatReportData$fat))
+                                     , sep="\n"
+)
+
+# injury report data
+injReportData <- injSorted[injSorted$running_pct <= th_health, ]
+injReportData <- rbind(injReportData, c("Other"
+                                          , 0
+                                          , sum(injSorted$inj) - max(injReportData$cum)
+                                          , sum(injSorted$inj)
+                                          , 1
+                                        )
+                      )
+injReportData$fat <- as.numeric(injReportData$fat)
+injReportData$inj <- as.numeric(injReportData$inj)
+injReportData$cum <- as.numeric(injReportData$cum)
+injReportData$running_pct <- as.numeric(injReportData$running_pct)
+other_count_inj <- as.character(nrow(injSorted) - nrow(injReportData) + 1)
+injReportData$event_pct <- paste(ifelse(injReportData$EVTYPE != "Other", as.character(injReportData$EVTYPE), paste("Other", paste("(", other_count_inj, ")", sep=""), sep=" "))
+                                     , formatC(sum(injSorted$inj), format="d", big.mark=",")
+                                     , percent(injReportData$inj / sum(injReportData$inj))
+                                     , sep="\n"
+                                )
+
+
+# make economic damage visualization
+par(oma=c(1, 1, 1, 1))
+grid.newpage()
+grid.rect()
+pushViewport(viewport(layout=grid.layout(2, 1)))
+
+vp1 <- viewport(layout.pos.col=1, layout.pos.row=1)
+pushViewport(vp1)
 treemap(cropDmgReportData
         , index="event_pct"
         , vSize="crop_dmg"
         , type="index"
-#        , sortID="crop_dmg"
+        , fontsize.title=14
+        , title= paste("Crop Damage By Event, 1950-2011 - Total: ", currency(sum(cropDmgSorted$crop_dmg), digits=0L), sep='')
+        , vp=vp1
 )
+popViewport()
 
+vp2 <- viewport(layout.pos.col=1, layout.pos.row=2)
+pushViewport(vp2)
 treemap(propDmgReportData
         , index="event_pct"
         , vSize="prop_dmg"
         , type="index"
-#        , sortID="prop_dmg"
+        , fontsize.title=14
+        , title= paste("Property Damage By Event, 1950-2011 - Total: ", currency(sum(propDmgSorted$prop_dmg), digits=0L), sep='')
+        , vp=vp2
 )
+popViewport()
+
+
+# make health impact visualizations
+par(oma=c(1, 1, 1, 1))
+grid.newpage()
+grid.rect()
+pushViewport(viewport(layout=grid.layout(2, 1)))
+
+vp1 <- viewport(layout.pos.col=1, layout.pos.row=1)
+pushViewport(vp1)
+treemap(fatReportData
+        , index="event_pct"
+        , vSize="fat"
+        , type="index"
+        , fontsize.title=14
+        , title= paste("Fatalities By Event, 1950-2011 - Total: ", formatC(sum(fatSorted$fat), format="d", big.mark=","), sep='')
+        , vp=vp1
+)
+popViewport()
+
+vp2 <- viewport(layout.pos.col=1, layout.pos.row=2)
+pushViewport(vp2)
+treemap(injReportData
+        , index="event_pct"
+        , vSize="inj"
+        , type="index"
+        , fontsize.title=14
+        , title= paste("Injuries By Event, 1950-2011 - Total: ", formatC(sum(injSorted$inj), format="d", big.mark=","), sep='')
+        , vp=vp2
+)
+popViewport()
