@@ -14,15 +14,15 @@ output:
 
 ### Synopsis
 
-We examine historical US storm data from NOAA, to assess types of events that are most harmful to human health, and also which types of events have the greatest economic consequences.
+We examine historical US storm data from NOAA covering 1950-2011, to assess types of events that are most harmful to human health, and also which types of events have the greatest economic consequences. Many nominally distinct event types are similar (e.g. different types of floods). We here report the storm event types as presented in the data, and do not go beyond the data by attempting to amalgamate similar types.
 
-Primary findings:  
+Primary findings:
 
-* Tornadoes are the largest historical contributor to weather event fatalities, at 37%
-* Tornadoes are also the largest historical cause of weather event injury, at 65%
-* Drought is the largest cause of crop damage at almost $14 billion.
-* Flooding is the largest cause of property damage at over $144.5 billion.
-* A fuller analysis would need to take into account variables like geography, date, age, and currency depreciation.
+* Tornadoes are the largest historical contributor to weather event fatalities, at 37% of the 15,145 total.
+* Tornadoes are also the largest historical cause of weather event injury, at 65% of the 140,528 total.
+* Drought is the largest cause of crop damage at almost ~$14 billion of the ~$49 billion total.
+* Flooding is the largest cause of property damage at ~$144.5 billion of the ~427 billion total.
+* A fuller analysis would need to take into account variables like geography, date, age, gender, and currency depreciation.
 
 ### Data Loading/Processing
 
@@ -255,7 +255,7 @@ fatReportData$cum <- as.numeric(fatReportData$cum)
 fatReportData$running_pct <- as.numeric(fatReportData$running_pct)
 other_count_fat <- as.character(nrow(fatSorted) - nrow(fatReportData) + 1)
 fatReportData$event_pct <- paste(ifelse(fatReportData$EVTYPE != "Other", as.character(fatReportData$EVTYPE), paste("Other", paste("(", other_count_fat, ")", sep=""), sep=" "))
-                                     , formatC(sum(fatSorted$fat), format="d", big.mark=",")
+                                     , formatC(fatReportData$fat, format="d", big.mark=",")
                                      , percent(fatReportData$fat / sum(fatReportData$fat))
                                      , sep="\n"
 )
@@ -275,7 +275,7 @@ injReportData$cum <- as.numeric(injReportData$cum)
 injReportData$running_pct <- as.numeric(injReportData$running_pct)
 other_count_inj <- as.character(nrow(injSorted) - nrow(injReportData) + 1)
 injReportData$event_pct <- paste(ifelse(injReportData$EVTYPE != "Other", as.character(injReportData$EVTYPE), paste("Other", paste("(", other_count_inj, ")", sep=""), sep=" "))
-                                     , formatC(sum(injSorted$inj), format="d", big.mark=",")
+                                     , formatC(injReportData$inj, format="d", big.mark=",")
                                      , percent(injReportData$inj / sum(injReportData$inj))
                                      , sep="\n"
                                 )
